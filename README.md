@@ -1,7 +1,7 @@
 jsonfu
 ======
 
-Make json pretty.
+Make json pretty
 
 ```sh
 # example with consul
