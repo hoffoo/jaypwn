@@ -37,10 +37,8 @@ try_again:
 	}
 
 	colorful(pretty)
-	if buf.Len() != 0 {
-		io.Copy(os.Stdout, &buf)
-		fmt.Println()
-	}
+	io.Copy(os.Stdout, &buf)
+	fmt.Println()
 }
 
 const (
@@ -48,6 +46,10 @@ const (
 	keyStr   = "\x1b[1;34;40m"
 	valueStr = "\x1b[5;34;40m"
 	operator = "\x1b[1;30;40m"
+)
+
+var (
+	buf bytes.Buffer
 )
 
 // sure why not
@@ -66,31 +68,31 @@ func colorful(bs []byte) {
 			} else {
 				stringColor(valueStr)
 			}
-		case rune(b) >= '0' && rune(b) <= '9':
+		case b >= '0' && b <= '9':
 			// hilight numbers (if not in string)
 			if !stringToggle {
 				startColor(number)
-				writeByte(b)
+				buf.WriteByte(b)
 				stopColor()
 			} else {
-				writeByte(b)
+				buf.WriteByte(b)
 			}
 		case b == '{' || b == '}':
 			startColor(operator)
-			writeByte(b)
+			buf.WriteByte(b)
 			stopColor()
 		case b == ':':
 			isKey = false
-			writeByte(b)
+			buf.WriteByte(b)
 		case b == '\n':
 			isKey = true
-			writeByte(b)
+			buf.WriteByte(b)
 		case b == '[' || b == ']' || b == ',':
 			startColor(operator)
-			writeByte(b)
+			buf.WriteByte(b)
 			stopColor()
 		default:
-			writeByte(b)
+			buf.WriteByte(b)
 		}
 	}
 }
@@ -107,10 +109,10 @@ func stringColor(color string) {
 	if stringToggle {
 		// start string color
 		startColor(color)
-		writeByte('"')
+		buf.WriteByte('"')
 	} else {
 		// end string color and write closing "
-		writeByte('"')
+		buf.WriteByte('"')
 		stopColor()
 	}
 }
@@ -121,12 +123,4 @@ func startColor(color string) {
 
 func stopColor() {
 	buf.WriteString("\x1b[0m")
-}
-
-var (
-	buf bytes.Buffer
-)
-
-func writeByte(b byte) {
-	buf.WriteByte(b)
 }
