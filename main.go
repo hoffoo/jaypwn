@@ -3,8 +3,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -35,7 +37,10 @@ try_again:
 	}
 
 	colorful(pretty)
-	fmt.Println()
+	if buf.Len() != 0 {
+		io.Copy(os.Stdout, &buf)
+		fmt.Println()
+	}
 }
 
 const (
@@ -62,10 +67,14 @@ func colorful(bs []byte) {
 				stringColor(valueStr)
 			}
 		case rune(b) >= '0' && rune(b) <= '9':
-			// hilight numbers
-			startColor(number)
-			writeByte(b)
-			stopColor()
+			// hilight numbers (if not in string)
+			if !stringToggle {
+				startColor(number)
+				writeByte(b)
+				stopColor()
+			} else {
+				writeByte(b)
+			}
 		case b == '{' || b == '}':
 			startColor(operator)
 			writeByte(b)
@@ -90,7 +99,7 @@ var (
 	stringToggle bool
 )
 
-func stringColor(color string) (skipWrite bool) {
+func stringColor(color string) {
 
 	stringToggle = !stringToggle
 
@@ -103,20 +112,21 @@ func stringColor(color string) (skipWrite bool) {
 		// end string color and write closing "
 		writeByte('"')
 		stopColor()
-		return true
 	}
-
-	return false
 }
 
 func startColor(color string) {
-	fmt.Print(color)
+	buf.WriteString(color)
 }
 
 func stopColor() {
-	fmt.Printf("\x1b[0m")
+	buf.WriteString("\x1b[0m")
 }
 
+var (
+	buf bytes.Buffer
+)
+
 func writeByte(b byte) {
-	os.Stdout.Write([]byte{b})
+	buf.WriteByte(b)
 }
