@@ -1,5 +1,5 @@
 // Make json pretty
-// cat foo.json | jsonfu
+// cat foo.json | jaypwn
 package main
 
 import (

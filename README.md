@@ -1,11 +1,11 @@
-jsonfu
+jaypwn
 ======
 
 Make json pretty
 
 ```sh
 # example with consul
-$ curl http://localhost:8500/v1/kv/somejson -s | jsonfu
+$ curl http://localhost:8500/v1/kv/somejson -s | jaypwn
 [
     {
         "CreateIndex": 16,
