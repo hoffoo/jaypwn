@@ -35,45 +35,88 @@ try_again:
 	}
 
 	colorful(pretty)
+	fmt.Println()
 }
+
+const (
+	number   = "\x1b[1;37;40m"
+	keyStr   = "\x1b[1;34;40m"
+	valueStr = "\x1b[5;34;40m"
+	operator = "\x1b[1;30;40m"
+)
 
 // sure why not
 func colorful(bs []byte) {
 
-	var stringToggle bool
+	// toggle to color keys different from values
+	isKey := true
 
 	for _, b := range bs {
 
-		// yay gross
-		var skipWrite bool
-
-		// hilight strings
-		if b == '"' {
-
-			stringToggle = !stringToggle
-
-			if stringToggle {
-				// start string color
-				fmt.Print("\x1b[35;1m")
+		switch {
+		case b == '"':
+			// highlight string values
+			if isKey {
+				stringColor(keyStr)
 			} else {
-				// end string color and write closing "
-				skipWrite = true
-				fmt.Print("\"\x1b[0m")
+				stringColor(valueStr)
 			}
-		}
-
-		// hilight numbers
-		if rune(b) >= '0' && rune(b) <= '9' {
-			skipWrite = true
-
-			fmt.Print("\x1b[34;1m")
-			os.Stdout.Write([]byte{b})
-			fmt.Printf("\x1b[0m")
-		}
-
-		// write byte unless already wrote
-		if !skipWrite {
-			os.Stdout.Write([]byte{b})
+		case rune(b) >= '0' && rune(b) <= '9':
+			// hilight numbers
+			startColor(number)
+			writeByte(b)
+			stopColor()
+		case b == '{' || b == '}':
+			startColor(operator)
+			writeByte(b)
+			stopColor()
+		case b == ':':
+			isKey = false
+			writeByte(b)
+		case b == '\n':
+			isKey = true
+			writeByte(b)
+		case b == '[' || b == ']' || b == ',':
+			startColor(operator)
+			writeByte(b)
+			stopColor()
+		default:
+			writeByte(b)
 		}
 	}
+}
+
+var (
+	stringToggle bool
+)
+
+func stringColor(color string) (skipWrite bool) {
+
+	stringToggle = !stringToggle
+
+	// hilight strings
+	if stringToggle {
+		// start string color
+		startColor(color)
+		writeByte('"')
+	} else {
+		// end string color and write closing "
+		writeByte('"')
+		stopColor()
+		return true
+	}
+
+	return false
+}
+
+func startColor(color string) {
+	fmt.Print(color)
+}
+
+func stopColor() {
+	fmt.Printf("\x1b[0m")
+}
+
+func writeByte(b byte) {
+	os.Stdout.Write([]byte{b})
 }
