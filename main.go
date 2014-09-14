@@ -24,28 +24,27 @@ func main() {
 try_again:
 	decoder.Decode(&out)
 
-	pretty, err := json.MarshalIndent(out, "", "\t")
+	jsbytes, err := json.MarshalIndent(out, "", "\t")
 	if err != nil {
 		fmt.Println("ERROR: ", err)
 		return
 	}
 
-	if len(pretty) == 0 {
+	if len(jsbytes) == 0 {
 		// didnt work, try plain obj
 		out = map[string]interface{}{}
 		goto try_again
 	}
 
-	colorful(pretty)
-	io.Copy(os.Stdout, &buf)
+	io.Copy(os.Stdout, colorful(jsbytes))
 	fmt.Println()
 }
 
 const (
-	number   = "\x1b[1;37;40m"
-	keyStr   = "\x1b[1;34;40m"
-	valueStr = "\x1b[5;34;40m"
-	operator = "\x1b[1;30;40m"
+	color_number   = "\x1b[1;37;40m"
+	color_keyStr   = "\x1b[1;34;40m"
+	color_valueStr = "\x1b[5;34;40m"
+	color_operator = "\x1b[1;30;40m"
 )
 
 var (
@@ -53,7 +52,7 @@ var (
 )
 
 // sure why not
-func colorful(bs []byte) {
+func colorful(bs []byte) *bytes.Buffer {
 
 	// toggle to color keys different from values
 	isKey := true
@@ -64,21 +63,22 @@ func colorful(bs []byte) {
 		case b == '"':
 			// highlight string values
 			if isKey {
-				stringColor(keyStr)
+				stringColor(color_keyStr)
 			} else {
-				stringColor(valueStr)
+				stringColor(color_valueStr)
 			}
 		case b >= '0' && b <= '9':
 			// hilight numbers (if not in string)
 			if !stringToggle {
-				startColor(number)
+				startColor(color_number)
 				buf.WriteByte(b)
 				stopColor()
 			} else {
 				buf.WriteByte(b)
 			}
-		case b == '{' || b == '}':
-			startColor(operator)
+		case b == '{' || b == '}' || b == '[' || b == ']' || b == ',':
+			// hilight operators
+			startColor(color_operator)
 			buf.WriteByte(b)
 			stopColor()
 		case b == ':':
@@ -87,14 +87,13 @@ func colorful(bs []byte) {
 		case b == '\n':
 			isKey = true
 			buf.WriteByte(b)
-		case b == '[' || b == ']' || b == ',':
-			startColor(operator)
-			buf.WriteByte(b)
-			stopColor()
 		default:
 			buf.WriteByte(b)
 		}
 	}
+
+	stopColor() // make sure we always stop color just in case
+	return &buf
 }
 
 var (
